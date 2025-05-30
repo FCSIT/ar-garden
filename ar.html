@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>3D Model AR Viewer</title>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/controls/OrbitControls.js"></script>
+    <script src="arBase.js"></script>
+    <script src="arInteraction.js"></script>
+    <style>
+      body { margin: 0; }
+      #info { 
+        position: absolute; 
+        top: 10px; 
+        left: 10px; 
+        color: #000;
+        font-family: Arial, sans-serif;
+        font-size: 16px;
+        background: rgba(255, 255, 255, 0.7);
+        padding: 5px 10px;
+        border-radius: 4px;
+      }
+      #roseBtn, #tulipBtn, #undoBtn, #deleteBtn, #arBtn { 
+        position: absolute; 
+        top: 40px; 
+        z-index: 2; 
+        margin: 0 5px;
+        padding: 8px 16px;
+        border: none;
+        border-radius: 4px;
+        background: #4CAF50;
+        color: white;
+        cursor: pointer;
+        transition: background 0.3s;
+        font-family: Arial, sans-serif;
+        font-size: 14px;
+        font-weight: bold;
+      }
+      #roseBtn:hover, #tulipBtn:hover, #undoBtn:hover, #deleteBtn:hover, #arBtn:hover {
+        background: #45a049;
+      }
+      #roseBtn { left: 10px; }
+      #tulipBtn { left: 90px; }
+      #undoBtn { left: 170px; }
+      #deleteBtn { left: 250px; }
+      #arBtn { left: 330px; }
+      #deleteBtn.delete-mode { 
+        background: #e74c3c; 
+        color: #fff; 
+      }
+      #arBtn.active {
+        background: #2196F3;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="info">3D Model AR Viewer</div>
+    <button id="roseBtn">Rose</button>
+    <button id="tulipBtn">Tulip</button>
+    <button id="undoBtn">Undo</button>
+    <button id="deleteBtn">Delete</button>
+    <button id="arBtn">Start AR</button>
+    <script>
+      const App = window.FlowerApp;
+      App.initScene();
+      initInteractions(App);
+
+      // AR mode toggle
+      const arBtn = document.getElementById('arBtn');
+      let arActive = false;
+
+      arBtn.onclick = async function() {
+        if (!arActive) {
+          const success = await App.startAR();
+          if (success) {
+            arActive = true;
+            arBtn.textContent = 'Exit AR';
+            arBtn.classList.add('active');
+          }
+        } else {
+          App.stopAR();
+          arActive = false;
+          arBtn.textContent = 'Start AR';
+          arBtn.classList.remove('active');
+        }
+      };
+
+      App.animate();
+    </script>
+  </body>
+</html>
