@@ -35,6 +35,7 @@ function initAR() {
   renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.xr.enabled = true;
+  renderer.setClearColor(0x000000, 0); // 完全透明
   document.body.appendChild(renderer.domElement);
 
   // AR Button（隐藏原生按钮）
