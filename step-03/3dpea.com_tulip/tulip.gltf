@@ -1,0 +1,253 @@
+{
+    "asset": {
+        "version": "2.0",
+        "generator": "Open Asset Import Library (assimp v5.4.0)"
+    },
+    "extensionsUsed": [
+        "KHR_materials_volume",
+        "FB_ngon_encoding"
+    ],
+    "accessors": [
+        {
+            "bufferView": 0,
+            "byteOffset": 0,
+            "componentType": 5126,
+            "count": 8730,
+            "type": "VEC3",
+            "max": [
+                1.1111704111099243,
+                4.309638023376465,
+                0.9145627021789551
+            ],
+            "min": [
+                -0.4317159950733185,
+                0.0002812575548887253,
+                -0.9145839810371399
+            ]
+        },
+        {
+            "bufferView": 1,
+            "byteOffset": 0,
+            "componentType": 5126,
+            "count": 8730,
+            "type": "VEC3",
+            "max": [
+                0.9997108578681946,
+                0.9996923208236694,
+                0.9999445676803589
+            ],
+            "min": [
+                -0.9999966621398926,
+                -0.9946328997612,
+                -0.999906063079834
+            ]
+        },
+        {
+            "bufferView": 2,
+            "byteOffset": 0,
+            "componentType": 5126,
+            "count": 8730,
+            "type": "VEC2",
+            "max": [
+                0.9902235865592957,
+                0.9936783313751221
+            ],
+            "min": [
+                0.008167587220668793,
+                0.008313238620758057
+            ]
+        },
+        {
+            "bufferView": 3,
+            "byteOffset": 0,
+            "componentType": 5126,
+            "count": 8730,
+            "type": "VEC2",
+            "max": [
+                0.9902235865592957,
+                0.9936783313751221
+            ],
+            "min": [
+                0.008167587220668793,
+                0.008313238620758057
+            ]
+        },
+        {
+            "bufferView": 4,
+            "byteOffset": 0,
+            "componentType": 5125,
+            "count": 44580,
+            "type": "SCALAR",
+            "max": [
+                8729
+            ],
+            "min": [
+                0
+            ]
+        }
+    ],
+    "buffers": [
+        {
+            "byteLength": 527520,
+            "uri": "tulip_0.bin"
+        }
+    ],
+    "bufferViews": [
+        {
+            "buffer": 0,
+            "byteOffset": 0,
+            "byteLength": 104760,
+            "target": 34962
+        },
+        {
+            "buffer": 0,
+            "byteOffset": 104760,
+            "byteLength": 104760,
+            "target": 34962
+        },
+        {
+            "buffer": 0,
+            "byteOffset": 209520,
+            "byteLength": 69840,
+            "target": 34962
+        },
+        {
+            "buffer": 0,
+            "byteOffset": 279360,
+            "byteLength": 69840,
+            "target": 34962
+        },
+        {
+            "buffer": 0,
+            "byteOffset": 349200,
+            "byteLength": 178320,
+            "target": 34963
+        }
+    ],
+    "images": [
+        {
+            "uri": "textures/image_0.png"
+        },
+        {
+            "uri": "textures/image_1.png"
+        },
+        {
+            "uri": "textures/image_2.png"
+        }
+    ],
+    "materials": [
+        {
+            "name": "Mat_1",
+            "pbrMetallicRoughness": {
+                "baseColorTexture": {
+                    "index": 0
+                },
+                "metallicFactor": 0.0
+            },
+            "normalTexture": {
+                "index": 1
+            },
+            "occlusionTexture": {
+                "index": 2,
+                "texCoord": 1
+            },
+            "doubleSided": true
+        }
+    ],
+    "meshes": [
+        {
+            "name": "meshes[0]",
+            "primitives": [
+                {
+                    "mode": 4,
+                    "material": 0,
+                    "indices": 4,
+                    "attributes": {
+                        "POSITION": 0,
+                        "NORMAL": 1,
+                        "TEXCOORD_0": 2,
+                        "TEXCOORD_1": 3
+                    }
+                }
+            ]
+        }
+    ],
+    "nodes": [
+        {
+            "name": "tulip",
+            "children": [
+                1
+            ]
+        },
+        {
+            "name": "RootNode0",
+            "matrix": [
+                0.009999999776482582,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.009999999776482582,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.009999999776482582,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                1.0
+            ],
+            "children": [
+                2
+            ],
+            "extras": {
+                "name": "RootNode.0"
+            }
+        },
+        {
+            "name": "tulip_with_stem1",
+            "mesh": 0,
+            "extras": {
+                "name": "tulip_with_stem.1"
+            }
+        }
+    ],
+    "samplers": [
+        {
+            "magFilter": 9729,
+            "minFilter": 9985
+        },
+        {
+            "magFilter": 9729,
+            "minFilter": 9985
+        },
+        {
+            "magFilter": 9729,
+            "minFilter": 9985
+        }
+    ],
+    "scenes": [
+        {
+            "nodes": [
+                0
+            ]
+        }
+    ],
+    "textures": [
+        {
+            "source": 0,
+            "sampler": 0
+        },
+        {
+            "source": 1,
+            "sampler": 1
+        },
+        {
+            "source": 2,
+            "sampler": 2
+        }
+    ],
+    "scene": 0
+}

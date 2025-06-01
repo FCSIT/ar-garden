@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<!--
+/*
+ * Copyright 2017 Google Inc. All Rights Reserved.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+-->
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>AR Tutorial</title>
+    <link rel="stylesheet" href="https://unpkg.com/material-components-web@latest/dist/material-components-web.min.css">
+    <script src="https://unpkg.com/material-components-web@latest/dist/material-components-web.min.js"></script>
+
+    <!-- three.js -->
+    <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+    </script>
+
+    <link rel="stylesheet" type="text/css" href="../shared/app.css" />
+    <style>
+      body {
+        margin: 0;
+        overflow: hidden;
+        font-family: Arial, sans-serif;
+      }
+      #enter-ar-info {
+        position: fixed;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        display: none;
+        text-align: center;
+        z-index: 100;
+        background: white;
+        padding: 20px;
+        border-radius: 5px;
+        box-shadow: 0 0 10px rgba(0,0,0,0.2);
+      }
+      #unsupported-info {
+        position: fixed;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+        z-index: 100;
+        background: white;
+        padding: 20px;
+        border-radius: 5px;
+        box-shadow: 0 0 10px rgba(0,0,0,0.2);
+      }
+      #stabilization {
+        position: fixed;
+        bottom: 12px;
+        left: 50%;
+        transform: translateX(-50%);
+        text-align: center;
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        padding: 12px 24px;
+        border-radius: 4px;
+        display: none;
+      }
+      .ar #stabilization {
+        display: block;
+      }
+      .ar.stabilized #stabilization {
+        display: none;
+      }
+      .ar #enter-ar-info {
+        display: none;
+      }
+      .ar #unsupported-info {
+        display: none;
+      }
+      #enter-ar {
+        background-color: #fff;
+        border: none;
+        border-radius: 4px;
+        color: #db4437;
+        padding: 12px 24px;
+        margin-bottom: 16px;
+        text-transform: uppercase;
+        font-family: 'Roboto Condensed', Arial, sans-serif;
+        font-size: 14px;
+        font-weight: bold;
+        cursor: pointer;
+      }
+      #debug-info {
+        position: fixed;
+        top: 10px;
+        left: 10px;
+        background: rgba(0, 0, 0, 0.7);
+        color: white;
+        padding: 10px;
+        border-radius: 5px;
+        font-family: monospace;
+        font-size: 12px;
+        z-index: 1000;
+        max-width: 300px;
+        max-height: 200px;
+        overflow: auto;
+      }
+    </style>
+    <script type="module">
+      import * as THREE from 'three';
+      import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+      window.THREE = THREE;
+
+      // Create debug info div
+      const debugDiv = document.createElement('div');
+      debugDiv.id = 'debug-info';
+      document.body.appendChild(debugDiv);
+
+      // Load the rose model
+      console.log('Starting to load rose model...');
+      const loader = new GLTFLoader();
+      loader.load(
+        './Rose.glb',
+        (gltf) => {
+          console.log('Rose model loaded successfully');
+          window.sunflower = gltf.scene;
+    
+          const box = new THREE.Box3().setFromObject(window.sunflower);
+          const size = box.getSize(new THREE.Vector3());
+          const center = box.getCenter(new THREE.Vector3());
+          window.sunflower.position.x += (window.sunflower.position.x - center.x);
+          window.sunflower.position.y += (window.sunflower.position.y - center.y);
+          window.sunflower.position.z += (window.sunflower.position.z - center.z);
+          const maxDim = Math.max(size.x, size.y, size.z);
+          const scale = 0.2 / maxDim * 3.0;
+          window.sunflower.scale.set(scale, scale, scale);
+   
+          window.sunflower.traverse(child => {
+            if(child.isMesh && child.material){
+              if ('metalness' in child.material) child.material.metalness = 0;
+              if ('roughness' in child.material) child.material.roughness = 0.5;
+              child.material.needsUpdate = true;
+            }
+          });
+          debugDiv.innerHTML += '<div>Model loaded successfully</div>';
+        },
+        (xhr) => {
+          console.log((xhr.loaded / xhr.total * 100) + '% loaded');
+          debugDiv.innerHTML = `<div>Loading model: ${Math.round(xhr.loaded / xhr.total * 100)}%</div>`;
+        },
+        (error) => {
+          console.error('Error loading rose model:', error);
+          debugDiv.innerHTML += `<div style="color: red">Error loading model: ${error.message}</div>`;
+        }
+      );
+
+      // model load 
+      const modelUrls = {
+        rose: './3dpea.com_Rose/Rose.gltf',
+        tulip: './3dpea.com_tulip/tulip.gltf'
+      };
+      let currentModel = 'rose';
+      let loadedModels = {};
+      let placedModels = [];
+      window.debugDiv = document.getElementById('debug-info');
+      function loadModel(name, cb) {
+        if (loadedModels[name]) {
+          cb(loadedModels[name].clone());
+          return;
+        }
+        const loader = new GLTFLoader();
+        loader.load(modelUrls[name], (gltf) => {
+          let model = gltf.scene;
+          // auto size
+          const box = new THREE.Box3().setFromObject(model);
+          const size = box.getSize(new THREE.Vector3());
+          const center = box.getCenter(new THREE.Vector3());
+          model.position.x += (model.position.x - center.x);
+          model.position.y += (model.position.y - center.y);
+          model.position.z += (model.position.z - center.z);
+          const maxDim = Math.max(size.x, size.y, size.z);
+          const desiredSize = 1.0; // Target maximum size (meters)
+          const scale = desiredSize / maxDim;
+          model.scale.set(scale, scale, scale);
+          model.updateWorldMatrix(true, true);
+          console.log(`[${name}] Original size:`, size, 'Scale factor:', scale);
+          // material pbr
+          model.traverse(child => {
+            if(child.isMesh && child.material){
+              if ('metalness' in child.material) child.material.metalness = 0;
+              if ('roughness' in child.material) child.material.roughness = 0.5;
+              child.material.needsUpdate = true;
+            }
+          });
+          loadedModels[name] = model;
+          cb(model.clone());
+          debugDiv.innerHTML += '<div>' + name + ' loaded successfully</div>';
+        }, undefined, (error) => {
+          debugDiv.innerHTML += `<div style='color:red'>Error loading ${name}: ${error.message}</div>`;
+        });
+      }
+      let canPlace = false;
+      document.getElementById('roseBtn').onclick = () => { currentModel = 'rose'; canPlace = false; };
+      document.getElementById('tulipBtn').onclick = () => { currentModel = 'tulip'; canPlace = false; };
+      document.getElementById('roseStartBtn').onclick = () => { currentModel = 'rose'; canPlace = true; };
+      document.getElementById('tulipStartBtn').onclick = () => { currentModel = 'tulip'; canPlace = true; };
+      document.getElementById('undoBtn').onclick = () => {
+        if (placedModels.length > 0) {
+          const last = placedModels.pop();
+          if (last && last.parent) {
+            last.parent.remove(last);
+            console.log('Model removed from scene', last);
+          } else {
+            console.log('Undo failed, model has no parent', last);
+          }
+        }
+      };
+      //  app.js use
+      window.loadCurrentModel = function(cb) { loadModel(currentModel, cb); };
+      window.placedModels = placedModels;
+      window.canPlaceModel = function() { return canPlace; };
+    </script>
+    <script type="module" src="app.js"></script>
+  </head>
+  <body>
+    <div id="enter-ar-info">
+      <button id="enter-ar">Start AR</button>
+      <p>This experiment requires ARCore</p>
+    </div>
+    <div id="unsupported-info">
+      <p>Sorry, this device does not support AR</p>
+    </div>
+    <div id="stabilization">
+      Move your phone to start detecting surfaces
+    </div>
+    <button id="exit-ar" style="position:fixed;top:20px;right:20px;z-index:2000;display:none;padding:10px 18px;font-size:16px;border-radius:6px;border:none;background:#db4437;color:#fff;font-weight:bold;">Quit AR</button>
+    <div style="position:fixed;left:20px;bottom:20px;z-index:2000;display:flex;gap:10px;">
+      <button id="roseBtn" style="padding:10px 18px;font-size:16px;border-radius:6px;border:none;background:#e91e63;color:#fff;font-weight:bold;">Rose</button>
+      <button id="roseStartBtn" style="padding:10px 18px;font-size:16px;border-radius:6px;border:none;background:#f06292;color:#fff;font-weight:bold;">Place Rose</button>
+      <button id="tulipBtn" style="padding:10px 18px;font-size:16px;border-radius:6px;border:none;background:#4caf50;color:#fff;font-weight:bold;">Tulip</button>
+      <button id="tulipStartBtn" style="padding:10px 18px;font-size:16px;border-radius:6px;border:none;background:#81c784;color:#fff;font-weight:bold;">Place Tulip</button>
+      <button id="undoBtn" style="padding:10px 18px;font-size:16px;border-radius:6px;border:none;background:#607d8b;color:#fff;font-weight:bold;">Undo</button>
+    </div>
+    <script>
+      // quit button
+      document.addEventListener('DOMContentLoaded', function() {
+        const enterARInfo = document.getElementById('enter-ar-info');
+        const exitARBtn = document.getElementById('exit-ar');
+        const enterARBtn = document.getElementById('enter-ar');
+        if (enterARBtn) {
+          enterARBtn.addEventListener('click', function() {
+            setTimeout(() => {
+              enterARInfo.style.display = 'none';
+              exitARBtn.style.display = 'block';
+            }, 500); // delay for a active ar session
+          });
+        }
+        if (exitARBtn) {
+          exitARBtn.addEventListener('click', function() {
+            window.location.reload();
+          });
+        }
+      });
+    </script>
+  </body>
+</html>
