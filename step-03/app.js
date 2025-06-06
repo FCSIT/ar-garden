@@ -14,24 +14,6 @@ function debugLog(message) {
 }
 
 /**
- * Query for WebXR support. If there's no support for the `immersive-ar` mode,
- * show an error.
- */
-(async function() {
-  debugLog('Checking WebXR support...');
-  const isArSessionSupported = navigator.xr && navigator.xr.isSessionSupported && await navigator.xr.isSessionSupported("immersive-ar");
-  debugLog(`WebXR AR support: ${isArSessionSupported}`);
-  
-  if (isArSessionSupported) {
-    document.getElementById("enter-ar").addEventListener("click", window.app.activateXR);
-    document.getElementById("enter-ar-info").style.display = "block";
-    document.getElementById("unsupported-info").style.display = "none";
-  } else {
-    onNoXRDevice();
-  }
-})();
-
-/**
  * Container class to manage connecting to the WebXR Device API
  * and handle rendering on every frame.
  */
@@ -230,13 +212,44 @@ class App {
   }
 }
 
+// Initialize the app after class definition
+window.app = new App();
+
 /**
- * Toggle on a class on the body to disable the "Enter AR"
- * button and display the unsupported browser message.
+ * Query for WebXR support. If there's no support for the `immersive-ar` mode,
+ * show an error.
+ */
+(async function() {
+  debugLog('Checking WebXR support in app.js...');
+  if ('xr' in navigator) {
+    try {
+      const isArSessionSupported = await navigator.xr.isSessionSupported('immersive-ar');
+      debugLog(`WebXR AR support in app.js: ${isArSessionSupported}`);
+      
+      if (isArSessionSupported) {
+        document.getElementById("enter-ar").addEventListener("click", window.app.activateXR);
+        document.getElementById("enter-ar-info").style.display = "block";
+        document.getElementById("unsupported-info").style.display = "none";
+      } else {
+        debugLog('AR session not supported in app.js');
+        onNoXRDevice();
+      }
+    } catch (e) {
+      debugLog(`Error checking AR support in app.js: ${e.message}`);
+      onNoXRDevice();
+    }
+  } else {
+    debugLog('WebXR API not available in app.js');
+    onNoXRDevice();
+  }
+})();
+
+/**
+ * Toggle the class on the body and updates the status message for AR-specific elements.
  */
 function onNoXRDevice() {
-  document.body.classList.add('unsupported');
+  document.body.classList.add('ar-unsupported');
+  document.getElementById("enter-ar-info").style.display = "none";
+  document.getElementById("unsupported-info").style.display = "block";
   debugLog('WebXR not supported on this device');
 }
-
-window.app = new App();

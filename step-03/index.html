@@ -1,24 +1,10 @@
 <!DOCTYPE html>
-<!--
-/*
- * Copyright 2017 Google Inc. All Rights Reserved.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
--->
 <html>
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>AR Tutorial</title>
     <link rel="stylesheet" href="https://unpkg.com/material-components-web@latest/dist/material-components-web.min.css">
     <script src="https://unpkg.com/material-components-web@latest/dist/material-components-web.min.js"></script>
@@ -33,7 +19,6 @@
     }
     </script>
 
-    <link rel="stylesheet" type="text/css" href="../shared/app.css" />
     <style>
       body {
         margin: 0;
@@ -117,54 +102,104 @@
         max-height: 200px;
         overflow: auto;
       }
+      #debug-info:empty {
+        display: none;
+      }
+      #music-control {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 2000;
+      }
+      #play-music {
+        background: #2196F3;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: bold;
+      }
+      #play-music:hover {
+        background: #1976D2;
+      }
+      #play-music.playing {
+        background: #f44336;
+      }
+      #play-music.playing:hover {
+        background: #d32f2f;
+      }
+      /* 添加植物介绍弹窗样式 */
+      .plant-info-modal {
+        display: none;
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        z-index: 2000;
+        max-width: 80%;
+        max-height: 80vh;
+        overflow-y: auto;
+      }
+      .plant-info-modal h2 {
+        margin-top: 0;
+        color: #333;
+        font-size: 1.5em;
+      }
+      .plant-info-modal p {
+        color: #666;
+        line-height: 1.6;
+        margin: 10px 0;
+      }
+      .close-button {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: none;
+        border: none;
+        font-size: 24px;
+        cursor: pointer;
+        color: #666;
+        padding: 5px;
+        line-height: 1;
+      }
+      .close-button:hover {
+        color: #333;
+      }
+      .modal-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.5);
+        z-index: 1999;
+      }
     </style>
     <script type="module">
       import * as THREE from 'three';
       import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
       window.THREE = THREE;
 
+      // Debug log helper
+      function debugLog(message) {
+        const debugDiv = document.getElementById('debug-info');
+        if (debugDiv) {
+          debugDiv.innerHTML += `<div>${message}</div>`;
+          debugDiv.scrollTop = debugDiv.scrollHeight;
+        }
+      }
+
       // Create debug info div
       const debugDiv = document.createElement('div');
       debugDiv.id = 'debug-info';
       document.body.appendChild(debugDiv);
-
-      // Load the rose model
-      console.log('Starting to load rose model...');
-      const loader = new GLTFLoader();
-      loader.load(
-        './Rose.glb',
-        (gltf) => {
-          console.log('Rose model loaded successfully');
-          window.sunflower = gltf.scene;
-    
-          const box = new THREE.Box3().setFromObject(window.sunflower);
-          const size = box.getSize(new THREE.Vector3());
-          const center = box.getCenter(new THREE.Vector3());
-          window.sunflower.position.x += (window.sunflower.position.x - center.x);
-          window.sunflower.position.y += (window.sunflower.position.y - center.y);
-          window.sunflower.position.z += (window.sunflower.position.z - center.z);
-          const maxDim = Math.max(size.x, size.y, size.z);
-          const scale = 0.2 / maxDim * 3.0;
-          window.sunflower.scale.set(scale, scale, scale);
-   
-          window.sunflower.traverse(child => {
-            if(child.isMesh && child.material){
-              if ('metalness' in child.material) child.material.metalness = 0;
-              if ('roughness' in child.material) child.material.roughness = 0.5;
-              child.material.needsUpdate = true;
-            }
-          });
-          debugDiv.innerHTML += '<div>Model loaded successfully</div>';
-        },
-        (xhr) => {
-          console.log((xhr.loaded / xhr.total * 100) + '% loaded');
-          debugDiv.innerHTML = `<div>Loading model: ${Math.round(xhr.loaded / xhr.total * 100)}%</div>`;
-        },
-        (error) => {
-          console.error('Error loading rose model:', error);
-          debugDiv.innerHTML += `<div style="color: red">Error loading model: ${error.message}</div>`;
-        }
-      );
 
       // model load 
       const modelUrls = {
@@ -174,9 +209,10 @@
       let currentModel = 'rose';
       let loadedModels = {};
       let placedModels = [];
-      window.debugDiv = document.getElementById('debug-info');
       function loadModel(name, cb) {
+        debugLog(`Loading model: ${name}`);
         if (loadedModels[name]) {
+          debugLog(`${name} loaded from cache`);
           cb(loadedModels[name].clone());
           return;
         }
@@ -195,7 +231,6 @@
           const scale = desiredSize / maxDim;
           model.scale.set(scale, scale, scale);
           model.updateWorldMatrix(true, true);
-          console.log(`[${name}] Original size:`, size, 'Scale factor:', scale);
           // material pbr
           model.traverse(child => {
             if(child.isMesh && child.material){
@@ -205,25 +240,41 @@
             }
           });
           loadedModels[name] = model;
+          debugLog(`${name} loaded successfully`);
           cb(model.clone());
-          debugDiv.innerHTML += '<div>' + name + ' loaded successfully</div>';
         }, undefined, (error) => {
-          debugDiv.innerHTML += `<div style='color:red'>Error loading ${name}: ${error.message}</div>`;
+          debugLog(`Error loading ${name}: ${error.message}`);
         });
       }
       let canPlace = false;
-      document.getElementById('roseBtn').onclick = () => { currentModel = 'rose'; canPlace = false; };
-      document.getElementById('tulipBtn').onclick = () => { currentModel = 'tulip'; canPlace = false; };
-      document.getElementById('roseStartBtn').onclick = () => { currentModel = 'rose'; canPlace = true; };
-      document.getElementById('tulipStartBtn').onclick = () => { currentModel = 'tulip'; canPlace = true; };
+      document.getElementById('roseBtn').onclick = () => { 
+        currentModel = 'rose'; 
+        canPlace = false;
+        showPlantInfo('rose');
+      };
+      document.getElementById('tulipBtn').onclick = () => { 
+        currentModel = 'tulip'; 
+        canPlace = false;
+        showPlantInfo('tulip');
+      };
+      document.getElementById('roseStartBtn').onclick = () => { 
+        currentModel = 'rose'; 
+        canPlace = true;
+        debugLog('Ready to place Rose');
+      };
+      document.getElementById('tulipStartBtn').onclick = () => { 
+        currentModel = 'tulip'; 
+        canPlace = true;
+        debugLog('Ready to place Tulip');
+      };
       document.getElementById('undoBtn').onclick = () => {
         if (placedModels.length > 0) {
           const last = placedModels.pop();
           if (last && last.parent) {
             last.parent.remove(last);
-            console.log('Model removed from scene', last);
+            debugLog('Last placed model removed');
           } else {
-            console.log('Undo failed, model has no parent', last);
+            debugLog('Undo failed, model has no parent');
           }
         }
       };
@@ -231,6 +282,53 @@
       window.loadCurrentModel = function(cb) { loadModel(currentModel, cb); };
       window.placedModels = placedModels;
       window.canPlaceModel = function() { return canPlace; };
+
+      // 添加植物介绍数据
+      const plantInfo = {
+        rose: {
+          title: "Rose",
+          description: "Roses are woody perennial flowering plants of the genus Rosa. They form a group of plants that can be erect shrubs, climbing, or trailing, with stems that are often armed with sharp prickles. Their flowers vary in size and shape and are usually large and showy, in colours ranging from white through yellows and reds. Most species are native to Asia, with smaller numbers native to Europe, North America, and northwestern Africa."
+        },
+        tulip: {
+          title: "Tulip",
+          description: "Tulips are spring-blooming perennial herbaceous bulbiferous geophytes in the Tulipa genus. Their flowers are usually large, showy and brightly colored, generally red, pink, yellow, or white. They often have a different colored blotch at the base of the tepals, internally. Tulips originally were found in a band stretching from Southern Europe to Central Asia, but since the seventeenth century have become widely naturalized and cultivated."
+        }
+      };
+
+      // 创建模态框和遮罩
+      const modal = document.createElement('div');
+      modal.className = 'plant-info-modal';
+      modal.innerHTML = `
+        <button class="close-button">&times;</button>
+        <h2></h2>
+        <p></p>
+      `;
+      document.body.appendChild(modal);
+
+      const overlay = document.createElement('div');
+      overlay.className = 'modal-overlay';
+      document.body.appendChild(overlay);
+
+      // 显示植物信息的函数
+      function showPlantInfo(plantType) {
+        const info = plantInfo[plantType];
+        if (info) {
+          modal.querySelector('h2').textContent = info.title;
+          modal.querySelector('p').textContent = info.description;
+          modal.style.display = 'block';
+          overlay.style.display = 'block';
+        }
+      }
+
+      // 关闭模态框的函数
+      function closeModal() {
+        modal.style.display = 'none';
+        overlay.style.display = 'none';
+      }
+
+      // 关闭按钮事件
+      modal.querySelector('.close-button').onclick = closeModal;
+      overlay.onclick = closeModal;
     </script>
     <script type="module" src="app.js"></script>
   </head>
@@ -245,6 +343,12 @@
     <div id="stabilization">
       Move your phone to start detecting surfaces
     </div>
+    <div id="music-control">
+      <button id="play-music">Play Music</button>
+      <audio id="background-music" loop>
+        <source src="Yiruma-RiverFlowsInYou.mp3" type="audio/mpeg">
+      </audio>
+    </div>
     <button id="exit-ar" style="position:fixed;top:20px;right:20px;z-index:2000;display:none;padding:10px 18px;font-size:16px;border-radius:6px;border:none;background:#db4437;color:#fff;font-weight:bold;">Quit AR</button>
     <div style="position:fixed;left:20px;bottom:20px;z-index:2000;display:flex;gap:10px;">
       <button id="roseBtn" style="padding:10px 18px;font-size:16px;border-radius:6px;border:none;background:#e91e63;color:#fff;font-weight:bold;">Rose</button>
@@ -253,6 +357,7 @@
       <button id="tulipStartBtn" style="padding:10px 18px;font-size:16px;border-radius:6px;border:none;background:#81c784;color:#fff;font-weight:bold;">Place Tulip</button>
       <button id="undoBtn" style="padding:10px 18px;font-size:16px;border-radius:6px;border:none;background:#607d8b;color:#fff;font-weight:bold;">Undo</button>
     </div>
+    <div id="debug-info"></div>
     <script>
       // quit button
       document.addEventListener('DOMContentLoaded', function() {
@@ -272,6 +377,24 @@
             window.location.reload();
           });
         }
+
+        // Music control
+        const playButton = document.getElementById('play-music');
+        const music = document.getElementById('background-music');
+        let isPlaying = false;
+
+        playButton.addEventListener('click', () => {
+          if (isPlaying) {
+            music.pause();
+            playButton.textContent = 'Play Music';
+            playButton.classList.remove('playing');
+          } else {
+            music.play();
+            playButton.textContent = 'Stop Music';
+            playButton.classList.add('playing');
+          }
+          isPlaying = !isPlaying;
+        });
       });
     </script>
   </body>
